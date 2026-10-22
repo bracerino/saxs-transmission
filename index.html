@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAXS Transmission Calculator</title>
+  <meta name="description" content="Estimate X-ray transmission and optimal sample thickness for SAXS/WAXS experiments with lab sources or synchrotron radiation.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%232a78d6'/><circle cx='16' cy='16' r='8' fill='none' stroke='white' stroke-width='2.5'/><circle cx='16' cy='16' r='2.5' fill='white'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    try { const t = localStorage.getItem('saxs-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" class="b1"/><circle cx="16" cy="16" r="8" class="b2"/><circle cx="16" cy="16" r="2.5" class="b3"/></svg>
+      <span><strong>SAXS</strong> Transmission Calculator</span>
+    </a>
+    <div class="top-actions">
+      <button class="btn ghost" id="aboutBtn" title="How the calculation works">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>
+        <span>How it works</span>
+      </button>
+      <button class="btn ghost" id="shareBtn" title="Copy a link to this exact configuration">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>
+        <span>Share</span>
+      </button>
+      <button class="btn ghost icon" id="themeBtn" title="Toggle light/dark theme" aria-label="Toggle theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="app">
+    <!-- ================= SIDEBAR: setup ================= -->
+    <aside class="side" aria-label="Setup">
+
+      <section class="sec">
+        <div class="sec-head"><h2><span class="sec-ico ico-beam" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg></span>Beam <span class="srcbar-unit">· energies in keV</span></h2><span class="sec-meta" id="beamMeta"></span></div>
+        <div class="srcbar" id="srcbar" role="radiogroup" aria-label="X-ray source"></div>
+        <div class="pop-panel" id="morePanel" hidden>
+          <div class="chips" id="moreSources"></div>
+          <div class="row2">
+            <label class="field"><span>Energy</span>
+              <div class="input-unit"><input type="number" id="energy" step="0.001" min="1" max="100" inputmode="decimal"><em>keV</em></div></label>
+            <label class="field"><span>Wavelength</span>
+              <div class="input-unit"><input type="number" id="wavelength" step="0.0001" min="0.124" max="12.4" inputmode="decimal"><em>Å</em></div></label>
+          </div>
+        </div>
+      </section>
+
+      <section class="sec">
+        <div class="sec-head"><h2><span class="sec-ico ico-sample" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 16V8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/></svg></span>Sample</h2></div>
+        <div class="picker" id="picker">
+          <button class="picker-btn" id="pickerBtn" aria-haspopup="listbox" aria-expanded="false">
+            <span class="pi" id="pickerIcon"></span>
+            <span class="picker-txt"><b id="pickerTitle"></b><small id="pickerDesc"></small></span>
+            <span class="chev" aria-hidden="true"></span>
+          </button>
+          <div class="picker-menu" id="pickerMenu" role="listbox" hidden></div>
+        </div>
+
+        <div class="phases-head">
+          <span>Phases</span>
+          <div class="seg sm" id="basisSeg" role="radiogroup" aria-label="Fraction basis">
+            <button data-v="vol" role="radio">vol %</button>
+            <button data-v="wt" role="radio">wt %</button>
+          </div>
+        </div>
+        <div class="comp-bar" id="compBar" aria-hidden="true"></div>
+        <div class="phases" id="phases"></div>
+        <button class="add" id="addPhase"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> Add phase</button>
+
+        <div class="por">
+          <div class="por-row">
+            <span class="por-lbl">Porosity <small>pores, or 100 − packing for powders</small></span>
+            <div class="input-unit xs"><input type="number" id="porosityNum" min="0" max="99" step="0.5" aria-label="Porosity"><em>%</em></div>
+          </div>
+          <input type="range" id="porosity" min="0" max="95" step="0.5" aria-label="Porosity slider">
+        </div>
+      </section>
+
+      <section class="sec">
+        <div class="sec-head"><h2><span class="sec-ico ico-holder" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 2v16.5a3 3 0 0 0 6 0V2"/><path d="M7 2h10M9 13h6"/></svg></span>Holder</h2><span class="sec-meta" id="holderMeta"></span></div>
+        <select id="container" aria-label="Sample holder"></select>
+        <div class="holder-custom" id="containerCustom" hidden>
+          <label class="field"><span>Formula</span><input type="text" id="cFormula" spellcheck="false"></label>
+          <label class="field"><span>Density</span><div class="input-unit"><input type="number" id="cDensity" step="0.01" min="0"><em>g/cm³</em></div></label>
+          <label class="field"><span>Thickness</span><div class="input-unit"><input type="number" id="cThick" step="1" min="0"><em>µm</em></div></label>
+        </div>
+      </section>
+    </aside>
+
+    <!-- ================= MAIN: results ================= -->
+    <main class="main" aria-label="Results">
+      <div class="kpis">
+        <section class="kpi kpi-thick">
+          <div class="kpi-head"><span class="kdot" aria-hidden="true"></span>Thickness for a target transmission</div>
+          <div class="kpi-body">
+            <div class="kpi-num" id="outThick">–</div>
+            <label class="kpi-in">
+              <span class="kpi-in-lbl">Target transmission</span>
+              <div class="input-unit"><input type="number" id="target" min="0.01" max="99.9" step="any" inputmode="decimal"><em>%</em></div>
+            </label>
+          </div>
+          <div class="quick" id="quickT">
+            <button data-t="37" title="Maximises the SAXS signal: t = 1/µ">37 % optimal</button>
+            <button data-t="50">50 %</button>
+            <button data-t="20">20 %</button>
+            <button data-t="10">10 %</button>
+          </div>
+        </section>
+        <section class="kpi kpi-trans">
+          <div class="kpi-head"><span class="kdot" aria-hidden="true"></span>Transmission of a given thickness</div>
+          <div class="kpi-body">
+            <div class="kpi-num" id="outT">–</div>
+            <label class="kpi-in">
+              <span class="kpi-in-lbl">Sample thickness</span>
+              <div class="input-unit"><input type="number" id="thickness" min="0" step="any" inputmode="decimal">
+                <select id="thickUnit" aria-label="Thickness unit"><option value="1">µm</option><option value="1000">mm</option></select></div>
+            </label>
+          </div>
+          <div class="meter" aria-hidden="true"><div id="meterT"></div></div>
+        </section>
+      </div>
+
+      <div class="alerts" id="alerts"></div>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h3>Transmission vs. thickness</h3>
+          <div class="legend">
+            <span><i class="lg lg-thick"></i>Target</span>
+            <span><i class="lg lg-trans"></i>Your thickness</span>
+            <span><i class="lg lg-opt"></i>Optimum 1/µ</span>
+          </div>
+        </div>
+        <div class="chart" id="chartT"></div>
+      </section>
+
+      <section class="panel">
+        <div class="tabs" role="tablist" id="tabs">
+          <button role="tab" data-tab="absorb" aria-selected="true">What absorbs</button>
+          <button role="tab" data-tab="numbers" aria-selected="false">Key numbers</button>
+          <button role="tab" data-tab="energy" aria-selected="false">Energy dependence</button>
+        </div>
+        <div class="tab-body" data-tab="absorb"><div class="bars" id="elBars"></div></div>
+        <div class="tab-body" data-tab="numbers" hidden><dl class="stats" id="stats"></dl></div>
+        <div class="tab-body" data-tab="energy" hidden>
+          <p class="tab-hint">Optimal thickness 1/µ across energies. Click a source line to switch to it.</p>
+          <div class="chart" id="chartE"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="aboutDlg">
+    <form method="dialog" class="dlg about">
+      <h3>How it works</h3>
+      <p>The linear attenuation coefficient of the sample is built up from its phases:</p>
+      <p class="eq">µ = (1 − P) · Σ<sub>i</sub> φ<sub>i</sub> ρ<sub>i</sub> Σ<sub>j</sub> w<sub>ij</sub> (µ/ρ)<sub>j</sub>(E)</p>
+      <p>φ<sub>i</sub> is the volume fraction of phase <em>i</em> in the solid (converted from wt % if needed), ρ<sub>i</sub> its density, w<sub>ij</sub> the mass fraction of element <em>j</em> in it, and P the porosity. Transmission follows Beer–Lambert, <span class="mono">T = exp(−µt)</span>, and the thickness for a target transmission is <span class="mono">t = −ln(T)/µ</span>.</p>
+      <p><strong>Optimal SAXS thickness.</strong> The scattered intensity scales as <span class="mono">t·e<sup>−µt</sup></span>, which peaks at <span class="mono">t = 1/µ</span>, i.e. T ≈ 37 %.</p>
+      <p><strong>Data.</strong> Total cross sections (photoabsorption + coherent + incoherent scattering) from Elam, Ravel &amp; Sieber, <em>Radiat. Phys. Chem.</em> 63 (2002) 121, interpolated with log-log cubic splines.</p>
+      <p class="muted small">This is an estimate. Real densities, residual solvent, and surface roughness all shift the answer, so measure the transmission on the instrument.</p>
+      <div class="dlg-actions"><button class="btn primary" value="ok">Close</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="cellDlg">
+    <form method="dialog" class="dlg">
+      <h3>Density from unit cell</h3>
+      <p class="hint">Crystal density from the lattice parameters: ρ = Z·M / (N<sub>A</sub>·V).</p>
+      <label class="field"><span>Formula</span><input type="text" id="cellFormula" spellcheck="false"></label>
+      <div class="cell-grid">
+        <label class="field"><span>Z (formula units/cell)</span><input type="number" id="cellZ" value="1" min="0.01" step="any"></label>
+        <span></span><span></span>
+        <label class="field"><span>a [Å]</span><input type="number" id="cellA" value="5.605" step="any"></label>
+        <label class="field"><span>b [Å]</span><input type="number" id="cellB" value="5.605" step="any"></label>
+        <label class="field"><span>c [Å]</span><input type="number" id="cellC" value="5.605" step="any"></label>
+        <label class="field"><span>α [°]</span><input type="number" id="cellAl" value="90" step="any"></label>
+        <label class="field"><span>β [°]</span><input type="number" id="cellBe" value="90" step="any"></label>
+        <label class="field"><span>γ [°]</span><input type="number" id="cellGa" value="90" step="any"></label>
+      </div>
+      <div class="cell-out" id="cellOut">–</div>
+      <div class="dlg-actions">
+        <button class="btn ghost" value="cancel">Cancel</button>
+        <button class="btn primary" value="ok" id="cellApply">Use this density</button>
+      </div>
+    </form>
+  </dialog>
+
+  <button class="mobibar" id="mobibar" aria-label="Jump to results">
+    <div><small><i class="kdot k-thick"></i><span id="mbTargetLbl">Thickness</span></small><b id="mbThick">–</b></div>
+    <div><small><i class="kdot k-trans"></i>Transmission</small><b id="mbT">–</b></div>
+    <span class="go">Results ↓</span>
+  </button>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
