@@ -1,6 +1,6 @@
 # SAXS Transmission Calculator
 
-A static web app for estimating the X-ray transmission of SAXS/WAXS samples, and the
+A static web app (https://bracerino.github.io/saxs-transmission) for estimating the X-ray transmission of SAXS/WAXS samples, and the
 sample thickness needed for a target transmission.
 
 - **Beam:** Cu, Mo, Ga, Ag, In, Cr, or Co Kα, or any synchrotron energy from 1 to 100 keV
