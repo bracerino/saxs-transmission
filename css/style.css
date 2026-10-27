@@ -175,17 +175,21 @@ select { cursor: pointer; }
 .picker { position: relative; }
 .picker-btn {
   width: 100%; display: flex; align-items: center; gap: 11px; text-align: left; cursor: pointer;
-  padding: 9px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2);
-  transition: border-color .15s;
+  padding: 9px 12px; border-radius: 12px;
+  border: 2px solid color-mix(in srgb, var(--accent) 55%, var(--border)); background: var(--accent-soft);
+  box-shadow: 0 1px 3px color-mix(in srgb, var(--accent) 18%, transparent);
+  transition: border-color .15s, box-shadow .15s;
 }
-.picker-btn:hover, .picker-btn[aria-expanded=true] { border-color: var(--accent); }
+.picker-btn:hover, .picker-btn[aria-expanded=true] { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent); }
 .pi {
   width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; flex: none;
   background: var(--accent-soft); color: var(--accent-ink); font-size: 16px;
 }
+.picker-btn .pi { background: var(--accent); color: var(--on-accent); }
+.picker-btn .chev { border-color: var(--accent-ink); }
 .picker-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .picker-txt b { font-size: 14px; font-weight: 600; }
-.picker-txt small { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.picker-txt small { font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .chev {
   width: 8px; height: 8px; flex: none; margin: 0 4px 3px;
   border-right: 2px solid var(--text-3); border-bottom: 2px solid var(--text-3);
@@ -213,7 +217,8 @@ select { cursor: pointer; }
 .phases-head { display: flex; align-items: center; justify-content: space-between; margin: 16px 0 8px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
 .seg { display: inline-flex; background: var(--surface-3); border-radius: 8px; padding: 2px; }
 .seg button { border: 0; background: none; cursor: pointer; padding: 3px 9px; border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--text-2); }
-.seg button[aria-checked=true] { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+.seg button:hover { color: var(--text); }
+.seg button[aria-checked=true] { background: var(--accent); color: var(--on-accent); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.18); }
 .phases { display: flex; flex-direction: column; gap: 6px; }
 .phase { border: 1px solid var(--border); border-radius: 11px; background: var(--surface); transition: border-color .15s; }
 .phase.open { border-color: var(--border-strong); background: var(--surface-2); }
@@ -568,13 +573,14 @@ dialog::backdrop { background: rgba(10, 14, 20, .45); backdrop-filter: blur(2px)
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ic) 25%, transparent);
 }
 
-/* credit: IMPLANT team + GitHub */
+/* credit: IMPLANT team + FZU + GitHub */
 .side { display: flex; flex-direction: column; }
 .credit {
   margin-top: auto; padding: 16px 24px 20px; border-top: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
 .credit a { color: var(--text); text-decoration: none; }
+.credit-orgs { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .credit-team { display: flex; align-items: center; gap: 12px; min-width: 0; border-radius: 12px; padding: 4px 8px 4px 4px; margin-left: -4px; }
 .credit-team:hover { background: var(--surface-3); }
 .credit-team img { width: 44px; height: 44px; border-radius: 11px; object-fit: cover; flex: none; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
@@ -589,3 +595,54 @@ dialog::backdrop { background: rgba(10, 14, 20, .45); backdrop-filter: blur(2px)
 .credit-gh svg, .btn svg.fill { width: 18px; height: 18px; fill: currentColor; stroke: none; }
 .sec:nth-last-child(2) { border-bottom: 0; }
 @media (max-width: 900px) { .credit { border-bottom: 0; } }
+
+/* measurement setup schematic */
+.setup { position: relative; margin: 4px 0 0; }
+.setup svg { display: block; width: 100%; max-width: 680px; height: auto; margin: 0 auto; overflow: visible; }
+.setup figcaption { margin-top: 10px; font-size: 13.5px; line-height: 1.55; color: var(--text-2); }
+.su-lbl { fill: var(--text-3); font-size: 12.5px; font-weight: 500; }
+.su-val { fill: var(--text); font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.su-thick { fill: var(--c-thick); }
+.su-tr { fill: var(--c-trans); }
+.su-src { fill: var(--surface-3); stroke: var(--border-strong); stroke-width: 1.5; }
+.su-beam { fill: var(--accent); opacity: .85; }
+.su-trans { fill: var(--c-trans); }
+.su-cone { fill: var(--text-3); opacity: .12; }
+.su-win { fill: var(--text-3); opacity: .55; }
+.su-sample { fill: color-mix(in srgb, var(--c-thick) 22%, var(--surface)); stroke: var(--c-thick); stroke-width: 1.5; }
+.su-dim { fill: none; stroke: var(--c-thick); stroke-width: 1.3; }
+.su-stop { fill: var(--text-2); }
+.su-det { fill: var(--surface-3); stroke: var(--border-strong); stroke-width: 1.5; }
+/* clickable parts of the diagram */
+.su-hot { cursor: pointer; outline: none; }
+.su-hit { fill: transparent; stroke: transparent; stroke-width: 1.5; stroke-dasharray: 5 4; transition: fill .15s, stroke .15s; }
+.su-hot:hover .su-hit, .su-hot:focus-visible .su-hit { fill: color-mix(in srgb, var(--accent) 6%, transparent); stroke: color-mix(in srgb, var(--accent) 55%, transparent); }
+.su-hot.active .su-hit { fill: color-mix(in srgb, var(--accent) 9%, transparent); stroke: var(--accent); stroke-dasharray: none; }
+#suHolder.off .su-win { fill: none; stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 3 3; opacity: .7; }
+.su-pop {
+  position: absolute; z-index: 20; width: min(340px, 100%);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--pop-shadow);
+  padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px;
+  scroll-margin: calc(var(--top-h) + 10px) 0 16px;
+}
+.su-pop[hidden] { display: none; }
+.su-pop h4 { margin: 0; font-size: 14.5px; font-weight: 600; padding-right: 24px; }
+.su-pop-x {
+  position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border: 0; border-radius: 8px;
+  background: none; cursor: pointer; font-size: 20px; line-height: 1; color: var(--text-3);
+}
+.su-pop-x:hover { background: var(--surface-3); color: var(--text); }
+.su-pop .quick { --c: var(--c-thick); }
+.su-pop .linkish { align-self: flex-start; font-size: 13px; }
+.su-pop .por { margin-top: 0; }
+.su-pop-out { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+.su-pop-out b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 600px) {
+  .su-lbl { font-size: 19px; }
+  .su-val { font-size: 21px; }
+}
+
+/* "Edit composition" from the diagram: briefly highlight the sample section */
+.sec.flash { animation: sec-flash 1.6s ease-out; }
+@keyframes sec-flash { 0%, 35% { background: color-mix(in srgb, var(--accent) 12%, transparent); } 100% { background: transparent; } }

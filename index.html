@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=5">
   <script>
     try { const t = localStorage.getItem('saxs-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
   </script>
@@ -103,10 +103,16 @@
       </section>
 
       <div class="credit">
-        <a class="credit-team" href="https://implant.fs.cvut.cz/" target="_blank" rel="noopener">
-          <img src="assets/implant-logo.png" alt="" width="44" height="44">
-          <span><small>Developed by</small><b>IMPLANT team</b></span>
-        </a>
+        <div class="credit-orgs">
+          <a class="credit-team" href="https://implant.fs.cvut.cz/" target="_blank" rel="noopener">
+            <img src="assets/implant-logo.png" alt="" width="44" height="44">
+            <span><small>Developed by</small><b>IMPLANT team</b></span>
+          </a>
+          <a class="credit-team" href="https://www.fzu.cz/" target="_blank" rel="noopener">
+            <img src="assets/fzu-logo.png" alt="" width="44" height="44">
+            <span><small>Support from</small><b>FZU</b></span>
+          </a>
+        </div>
         <a class="credit-gh" href="https://github.com/bracerino" target="_blank" rel="noopener" title="bracerino on GitHub">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.9 1.2 1.9 1.2 1.1 1.9 2.9 1.3 3.6 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5z"/></svg>
           <span>bracerino</span>
@@ -174,6 +180,53 @@
           <div class="chart" id="chartE"></div>
         </div>
       </section>
+
+      <section class="panel">
+        <div class="panel-head"><h3>Measurement setup</h3><span class="tab-hint">Click the source, sample or transmitted beam to change it</span></div>
+        <figure class="setup" id="setup">
+          <svg viewBox="0 0 640 240" role="group" aria-labelledby="setupCap">
+            <!-- scattered cone -->
+            <polygon class="su-cone" points="325,120 602,34 602,206"/>
+            <text class="su-lbl" x="470" y="66" text-anchor="middle">scattered X-rays (SAXS)</text>
+            <!-- source + incident beam -->
+            <g class="su-hot" data-edit="source" tabindex="0" role="button" aria-label="Change beam energy or wavelength">
+              <rect class="su-hit" x="2" y="88" width="252" height="110" rx="10"/>
+              <rect class="su-src" x="8" y="96" width="72" height="48" rx="8"/>
+              <text class="su-val" x="44" y="125" text-anchor="middle" id="suSrc">–</text>
+              <text class="su-lbl" x="44" y="164" text-anchor="middle">X-ray source</text>
+              <text class="su-val" x="44" y="188" text-anchor="middle" id="suE">–</text>
+              <rect class="su-beam" x="80" y="114" width="172" height="12" id="suBeamI"/>
+              <text class="su-lbl" x="166" y="104" text-anchor="middle">incident beam I₀</text>
+            </g>
+            <!-- holder + sample -->
+            <g class="su-hot" data-edit="sample" tabindex="0" role="button" aria-label="Change sample, thickness or holder">
+              <rect class="su-hit" x="243" y="40" width="94" height="198" rx="10" id="suSampleHit"/>
+              <g id="suHolder">
+                <rect class="su-win" x="251" y="68" width="6" height="104" rx="1.5" id="suWinL"/>
+                <rect class="su-win" x="323" y="68" width="6" height="104" rx="1.5" id="suWinR"/>
+                <text class="su-lbl" x="290" y="232" text-anchor="middle" id="suHolderLbl">holder walls</text>
+              </g>
+              <rect class="su-sample" x="257" y="72" width="66" height="96" id="suSample"/>
+              <text class="su-lbl" x="290" y="56" text-anchor="middle">sample</text>
+              <path class="su-dim" d="M257 184v8M323 184v8M257 188h66" id="suDim"/>
+              <text class="su-val su-thick" x="290" y="210" text-anchor="middle" id="suT">–</text>
+            </g>
+            <!-- transmitted beam + beamstop -->
+            <g class="su-hot" data-edit="trans" tabindex="0" role="button" aria-label="Change the transmission and sample thickness">
+              <rect class="su-hit" x="340" y="86" width="246" height="78" rx="10"/>
+              <rect class="su-beam su-trans" x="329" y="114" width="235" height="12" id="suBeamT"/>
+              <text class="su-val su-tr" x="446" y="104" text-anchor="middle" id="suTr">–</text>
+              <rect class="su-stop" x="564" y="106" width="10" height="28" rx="2"/>
+              <text class="su-lbl" x="580" y="156" text-anchor="end">beamstop</text>
+            </g>
+            <!-- detector -->
+            <rect class="su-det" x="602" y="28" width="14" height="184" rx="3"/>
+            <text class="su-lbl" x="636" y="232" text-anchor="end">2D detector</text>
+          </svg>
+          <div class="su-pop" id="suPop" role="dialog" hidden></div>
+          <figcaption id="setupCap">The beam passes the holder walls and a sample of thickness <em>t</em>; a fraction <em>T</em> = e<sup>−µt</sup> · <em>T</em><sub>holder</sub> comes out and is caught by the beamstop, the rest is absorbed or scattered. A thicker sample scatters more but absorbs more, so the SAXS signal ∝ <em>t</em>·e<sup>−µt</sup> is largest at <em>t</em> = 1/µ (<em>T</em> ≈ 37 %).</figcaption>
+        </figure>
+      </section>
     </main>
   </div>
 
@@ -221,6 +274,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=4"></script>
 </body>
 </html>

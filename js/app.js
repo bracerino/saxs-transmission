@@ -466,6 +466,7 @@ function update() {
   renderAlerts(alerts);
   renderStats(r, h);
   renderBars(r);
+  renderSetup(h, Ttot);
   last = { r, h, tReq };
   renderCharts();
 }
@@ -507,7 +508,159 @@ function blankResults() {
   $('meterT').style.width = '0';
   $('stats').innerHTML = ''; $('elBars').innerHTML = ''; $('compBar').innerHTML = '';
   $('chartT').innerHTML = ''; $('chartE').innerHTML = '';
+  for (const id of ['suT', 'suTr']) $(id).textContent = '–';
   last = null;
+}
+
+function renderSetup(h, Ttot) {
+  const src = SOURCES.find((x) => x.id === state.source);
+  $('suSrc').textContent = state.source === 'custom' ? 'Synch.' : src.label;
+  $('suE').textContent = `${sig(state.energy, 4)} keV`;
+  $('suT').textContent = `t = ${fmtLen(state.thickness)}`;
+  $('suTr').textContent = isFinite(Ttot) ? `transmitted T = ${fmtPct(Ttot)}` : '–';
+  // sample drawn wider for thicker samples: 18 px per decade, 1 µm → 8 px, 10 mm → 80 px
+  const sw = Math.max(6, Math.min(84, 8 + 18 * Math.log10(Math.max(state.thickness, 1e-3))));
+  const x0 = 290 - sw / 2, x1 = 290 + sw / 2;
+  const attr = (id, o) => { for (const [k, v] of Object.entries(o)) $(id).setAttribute(k, v); };
+  attr('suSample', { x: x0, width: sw });
+  attr('suWinL', { x: x0 - 6 });
+  attr('suWinR', { x: x1 });
+  attr('suDim', { d: `M${x0} 184v8M${x1} 184v8M${x0} 188h${sw}` });
+  attr('suBeamI', { width: x0 - 6 - 80 });
+  const hw = Math.max(47, sw / 2 + 12);
+  attr('suSampleHit', { x: 290 - hw, width: 2 * hw });
+  // transmitted beam thins out with the transmission
+  const w = isFinite(Ttot) ? Math.max(1.5, 12 * Ttot) : 12;
+  attr('suBeamT', { x: x1 + 6, width: 564 - x1 - 6, y: 120 - w / 2, height: w });
+  $('suHolder').classList.toggle('off', !h.label);
+  $('suHolderLbl').textContent = h.label ? 'holder walls' : 'no holder';
+  syncSetupPop();
+}
+
+// ---------------------------------------------------------------- setup diagram popover
+let popKind = null;
+function setupPopBody(kind) {
+  if (kind === 'source') {
+    return `<h4>X-ray beam</h4>
+      <div class="chips" data-k="src">${SOURCES.map((s) => `<button type="button" role="radio" data-id="${s.id}">${s.id === 'custom' ? 'Synchrotron / custom' : s.label}${s.id === 'custom' ? '' : `<small>${s.E.toFixed(2)} keV</small>`}</button>`).join('')}</div>
+      <div class="row2">
+        <label class="field"><span>Energy</span><div class="input-unit"><input type="number" data-k="energy" step="0.001" min="1" max="100" inputmode="decimal"><em>keV</em></div></label>
+        <label class="field"><span>Wavelength</span><div class="input-unit"><input type="number" data-k="wavelength" step="0.0001" min="0.124" max="12.4" inputmode="decimal"><em>Å</em></div></label>
+      </div>`;
+  }
+  if (kind === 'sample') {
+    const groups = {};
+    for (const x of PRESETS) (groups[x.group] ||= []).push(x);
+    return `<h4>Sample</h4>
+      <label class="field"><span>Material</span><select data-k="preset">
+        <option value="" disabled>Custom sample</option>
+        ${Object.entries(groups).map(([g, list]) => `<optgroup label="${esc(g)}">${list.map((x) => `<option value="${x.id}">${esc(x.title)}</option>`).join('')}</optgroup>`).join('')}
+      </select></label>
+      <label class="field"><span>Thickness</span><div class="input-unit"><input type="number" data-k="thickness" min="0" step="any" inputmode="decimal">
+        <select data-k="thickUnit" aria-label="Thickness unit"><option value="1">µm</option><option value="1000">mm</option></select></div></label>
+      <div class="por">
+        <div class="por-row">
+          <span class="por-lbl">Porosity <small>pores, or 100 − packing for powders</small></span>
+          <div class="input-unit xs"><input type="number" data-k="porosity" min="0" max="99" step="0.5" aria-label="Porosity"><em>%</em></div>
+        </div>
+        <input type="range" data-k="porosity" min="0" max="95" step="0.5" aria-label="Porosity slider">
+      </div>
+      <label class="field"><span>Holder</span><select data-k="container">${CONTAINERS.map((c) => `<option value="${c.id}">${esc(c.label)}</option>`).join('')}</select></label>
+      <button type="button" class="linkish" data-k="editComp">Edit composition and phases →</button>`;
+  }
+  return `<h4>Transmitted beam</h4>
+    <label class="field"><span>Transmission</span><div class="input-unit"><input type="number" data-k="target" min="0.01" max="99.9" step="any" inputmode="decimal"><em>%</em></div></label>
+    <div class="quick" data-k="quick">${[37, 50, 20, 10].map((t) => `<button type="button" data-t="${t}">${t} %${t === 37 ? ' optimal' : ''}</button>`).join('')}</div>
+    <p class="su-pop-out">The sample thickness is set to give this transmission: <b data-k="outThick"></b></p>`;
+}
+// keeps the open popover in step with the state, without touching the field being typed in
+function syncSetupPop() {
+  if (!popKind) return;
+  const pop = $('suPop');
+  const set = (k, v) => { const el = pop.querySelector(`[data-k="${k}"]`); if (el && el !== document.activeElement) el.value = v; };
+  if (popKind === 'source') {
+    pop.querySelectorAll('[data-k="src"] button').forEach((b) => b.setAttribute('aria-checked', b.dataset.id === state.source));
+    set('energy', +state.energy.toFixed(4));
+    set('wavelength', +(P.HC_KEV_A / state.energy).toFixed(5));
+  } else if (popKind === 'sample') {
+    set('preset', state.preset || '');
+    set('thickUnit', String(state.thickUnit));
+    set('thickness', +(state.thickness / state.thickUnit).toPrecision(6));
+    pop.querySelectorAll('[data-k="porosity"]').forEach((el) => { if (el !== document.activeElement) el.value = state.porosity; });
+    set('container', state.container);
+  } else {
+    set('target', state.target);
+    pop.querySelectorAll('[data-k="quick"] button').forEach((b) => b.classList.toggle('on', +b.dataset.t === state.target));
+    pop.querySelector('[data-k="outThick"]').textContent = $('outThick').textContent;
+  }
+}
+function openSetupPop(hot) {
+  const pop = $('suPop'), fig = $('setup');
+  if (popKind === hot.dataset.edit) { closeSetupPop(); return; }
+  popKind = hot.dataset.edit;
+  document.querySelectorAll('.su-hot').forEach((g) => g.classList.toggle('active', g === hot));
+  pop.innerHTML = `<button type="button" class="su-pop-x" aria-label="Close">×</button>${setupPopBody(popKind)}`;
+  pop.setAttribute('aria-label', pop.querySelector('h4').textContent);
+  pop.hidden = false;
+  syncSetupPop();
+  // anchor below the clicked part (above it if the window has no room below), kept inside the figure
+  const f = fig.getBoundingClientRect(), r = hot.getBoundingClientRect(), h = pop.offsetHeight;
+  const left = Math.max(0, Math.min(f.width - pop.offsetWidth, r.left + r.width / 2 - f.left - pop.offsetWidth / 2));
+  const above = innerHeight - r.bottom < h + 12 && r.top - 70 > h;
+  pop.style.left = `${left}px`;
+  pop.style.top = `${above ? r.top - f.top - h - 6 : r.bottom - f.top + 6}px`;
+  (pop.querySelector('input') || pop.querySelector('select')).focus({ preventScroll: true });
+  pop.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+function closeSetupPop() {
+  if (!popKind) return;
+  const hot = document.querySelector('.su-hot.active');
+  popKind = null;
+  $('suPop').hidden = true;
+  document.querySelectorAll('.su-hot').forEach((g) => g.classList.remove('active'));
+  return hot;
+}
+// the diagram's transmission sets the target and resizes the sample to reach it
+function setTransmission(v) {
+  if (!(v > 0 && v < 100)) return;
+  state.target = v; $('target').value = v;
+  update();
+  if (last && isFinite(last.tReq)) { state.thickness = +last.tReq.toPrecision(4); renderThickness(); update(); }
+}
+function onSetupPopInput(e) {
+  const k = e.target.dataset.k, v = parseFloat(e.target.value);
+  if (k === 'energy') setEnergy(v, 'energy');
+  else if (k === 'wavelength') { if (v > 0) setEnergy(P.HC_KEV_A / v, 'wavelength'); }
+  else if (k === 'thickness') { if (v >= 0) { state.thickness = v * state.thickUnit; renderThickness(); update(); } }
+  else if (k === 'porosity') {
+    state.porosity = Math.max(0, Math.min(99, v || 0));
+    $('porosity').value = $('porosityNum').value = state.porosity;
+    markModified(); update();
+  } else if (k === 'target') setTransmission(v);
+}
+function onSetupPopChange(e) {
+  const k = e.target.dataset.k, v = e.target.value;
+  if (k === 'preset') applyPreset(v);
+  else if (k === 'thickUnit') { state.thickUnit = +v; renderThickness(); syncSetupPop(); }
+  else if (k === 'container') { state.container = v; renderContainer(); update(); }
+}
+function onSetupPopClick(e) {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.classList.contains('su-pop-x')) { closeSetupPop()?.focus(); return; }
+  if (b.closest('[data-k="src"]')) {
+    setSource(b.dataset.id);
+    if (b.dataset.id === 'custom') $('suPop').querySelector('[data-k="energy"]').select();
+  } else if (b.closest('[data-k="quick"]')) {
+    setTransmission(+b.dataset.t);
+  } else if (b.dataset.k === 'editComp') {
+    closeSetupPop();
+    state.phases.forEach((_, i) => openPhases.add(i));
+    renderPhases();
+    const sec = $('picker').closest('.sec');
+    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    sec.classList.remove('flash'); void sec.offsetWidth; sec.classList.add('flash');
+    document.querySelector('.phase .combo-in')?.focus({ preventScroll: true });
+  }
 }
 
 function renderStats(r, h) {
@@ -684,6 +837,23 @@ function init() {
     state.target = +b.dataset.t; $('target').value = state.target; update();
   });
   $('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) selectTab(b.dataset.tab); });
+
+  // setup diagram
+  const setup = $('setup');
+  setup.addEventListener('click', (e) => {
+    const g = e.target.closest('.su-hot');
+    if (g) openSetupPop(g);
+    else if (!e.target.closest('#suPop')) closeSetupPop();
+  });
+  setup.addEventListener('keydown', (e) => {
+    const g = e.target.closest('.su-hot');
+    if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openSetupPop(g); }
+  });
+  $('suPop').addEventListener('input', onSetupPopInput);
+  $('suPop').addEventListener('change', onSetupPopChange);
+  $('suPop').addEventListener('click', onSetupPopClick);
+  document.addEventListener('click', (e) => { if (!e.target.closest('#setup')) closeSetupPop(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && popKind) closeSetupPop()?.focus(); });
 
   // dialogs & top bar
   $('cellDlg').addEventListener('input', calcCell);
