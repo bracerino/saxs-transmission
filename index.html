@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=5">
+  <link rel="stylesheet" href="css/style.css?v=10">
   <script>
     try { const t = localStorage.getItem('saxs-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
   </script>
@@ -187,7 +187,8 @@
           <svg viewBox="0 0 640 240" role="group" aria-labelledby="setupCap">
             <!-- scattered cone -->
             <polygon class="su-cone" points="325,120 602,34 602,206"/>
-            <text class="su-lbl" x="470" y="66" text-anchor="middle">scattered X-rays (SAXS)</text>
+            <text class="su-lbl" x="470" y="66" text-anchor="middle" id="suScat">scattered X-rays (SAXS)</text>
+            <text class="su-sig" text-anchor="middle"><tspan x="470" y="188" id="suSig"></tspan><tspan class="su-lbl" x="470" y="207">of optimum (at T ≈ 37 %)</tspan></text>
             <!-- source + incident beam -->
             <g class="su-hot" data-edit="source" tabindex="0" role="button" aria-label="Change beam energy or wavelength">
               <rect class="su-hit" x="2" y="88" width="252" height="110" rx="10"/>
@@ -207,7 +208,7 @@
                 <text class="su-lbl" x="290" y="232" text-anchor="middle" id="suHolderLbl">holder walls</text>
               </g>
               <rect class="su-sample" x="257" y="72" width="66" height="96" id="suSample"/>
-              <text class="su-lbl" x="290" y="56" text-anchor="middle">sample</text>
+              <text class="su-name" x="290" y="56" text-anchor="middle" id="suName"><title></title><tspan>sample</tspan></text>
               <path class="su-dim" d="M257 184v8M323 184v8M257 188h66" id="suDim"/>
               <text class="su-val su-thick" x="290" y="210" text-anchor="middle" id="suT">–</text>
             </g>
@@ -274,6 +275,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script type="module" src="js/app.js?v=4"></script>
+  <script type="module" src="js/app.js?v=9"></script>
 </body>
 </html>

@@ -46,7 +46,9 @@
     --shadow: 0 1px 2px rgba(0, 0, 0, .3);
     --pop-shadow: 0 12px 40px rgba(0, 0, 0, .5);
   }
+  :root:where(:not([data-theme="light"])) .setup { --sig-l: 64%; }
 }
+:root[data-theme="dark"] .setup { --sig-l: 64%; }
 :root[data-theme="dark"] {
   color-scheme: dark;
   --bg: #0e1014; --surface: #16191f; --surface-2: #1b1f26; --surface-3: #232831;
@@ -601,13 +603,16 @@ dialog::backdrop { background: rgba(10, 14, 20, .45); backdrop-filter: blur(2px)
 .setup svg { display: block; width: 100%; max-width: 680px; height: auto; margin: 0 auto; overflow: visible; }
 .setup figcaption { margin-top: 10px; font-size: 13.5px; line-height: 1.55; color: var(--text-2); }
 .su-lbl { fill: var(--text-3); font-size: 12.5px; font-weight: 500; }
+.su-name { fill: var(--text); font-size: 13px; font-weight: 600; }
 .su-val { fill: var(--text); font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .su-thick { fill: var(--c-thick); }
 .su-tr { fill: var(--c-trans); }
 .su-src { fill: var(--surface-3); stroke: var(--border-strong); stroke-width: 1.5; }
 .su-beam { fill: var(--accent); opacity: .85; }
 .su-trans { fill: var(--c-trans); }
-.su-cone { fill: var(--text-3); opacity: .12; }
+.setup { --sig-h: 0; --sig-a: .1; --sig-l: 34%; }
+.su-cone { fill: hsl(var(--sig-h) 42% 50%); opacity: var(--sig-a); transition: fill .25s, opacity .25s; }
+.su-sig { fill: hsl(var(--sig-h) 45% var(--sig-l)); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .su-win { fill: var(--text-3); opacity: .55; }
 .su-sample { fill: color-mix(in srgb, var(--c-thick) 22%, var(--surface)); stroke: var(--c-thick); stroke-width: 1.5; }
 .su-dim { fill: none; stroke: var(--c-thick); stroke-width: 1.3; }
@@ -641,6 +646,10 @@ dialog::backdrop { background: rgba(10, 14, 20, .45); backdrop-filter: blur(2px)
 @media (max-width: 600px) {
   .su-lbl { font-size: 19px; }
   .su-val { font-size: 21px; }
+  .su-name { font-size: 20px; }
+  .su-sig { font-size: 16px; }
+  .su-sig .su-lbl { font-size: 14.5px; }
+  #suSrc { font-size: 17px; }
 }
 
 /* "Edit composition" from the diagram: briefly highlight the sample section */

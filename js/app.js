@@ -466,7 +466,7 @@ function update() {
   renderAlerts(alerts);
   renderStats(r, h);
   renderBars(r);
-  renderSetup(h, Ttot);
+  renderSetup(h, Ttot, mu);
   last = { r, h, tReq };
   renderCharts();
 }
@@ -508,14 +508,15 @@ function blankResults() {
   $('meterT').style.width = '0';
   $('stats').innerHTML = ''; $('elBars').innerHTML = ''; $('compBar').innerHTML = '';
   $('chartT').innerHTML = ''; $('chartE').innerHTML = '';
-  for (const id of ['suT', 'suTr']) $(id).textContent = '–';
+  for (const id of ['suT', 'suTr', 'suSig']) $(id).textContent = '–';
   last = null;
 }
 
-function renderSetup(h, Ttot) {
+function renderSetup(h, Ttot, mu) {
   const src = SOURCES.find((x) => x.id === state.source);
   $('suSrc').textContent = state.source === 'custom' ? 'Synch.' : src.label;
   $('suE').textContent = `${sig(state.energy, 4)} keV`;
+  fitSampleName(state.preset ? (PRESETS.find((x) => x.id === state.preset)?.title ?? 'Sample') : 'Custom sample');
   $('suT').textContent = `t = ${fmtLen(state.thickness)}`;
   $('suTr').textContent = isFinite(Ttot) ? `transmitted T = ${fmtPct(Ttot)}` : '–';
   // sample drawn wider for thicker samples: 18 px per decade, 1 µm → 8 px, 10 mm → 80 px
@@ -532,9 +533,26 @@ function renderSetup(h, Ttot) {
   // transmitted beam thins out with the transmission
   const w = isFinite(Ttot) ? Math.max(1.5, 12 * Ttot) : 12;
   attr('suBeamT', { x: x1 + 6, width: 564 - x1 - 6, y: 120 - w / 2, height: w });
+  // SAXS signal ∝ t·e^(−µt)·T_holder, relative to its maximum at t = 1/µ: red (weak) → amber → green (optimal)
+  const mt = -Math.log(P.transmission(mu, state.thickness)), rel = mt > 0 ? mt * Math.exp(1 - mt) * h.T : 0;
+  $('setup').style.setProperty('--sig-h', Math.round(130 * rel));
+  $('setup').style.setProperty('--sig-a', (0.1 + 0.2 * rel).toFixed(3));
+  $('suSig').textContent = `SAXS signal: ${Math.round(rel * 100)} %`;
   $('suHolder').classList.toggle('off', !h.label);
   $('suHolderLbl').textContent = h.label ? 'holder walls' : 'no holder';
   syncSetupPop();
+}
+
+// sample name centred above the sample; a long one shifts left to stay clear of the
+// "scattered X-rays" label, and is shortened with … only if it still doesn't fit
+function fitSampleName(name) {
+  const el = $('suName'), span = el.querySelector('tspan');
+  el.querySelector('title').textContent = name;
+  span.textContent = name;
+  const right = $('suScat').getBBox().x - 10, room = right - 4;
+  for (let n = name.length - 1; span.getComputedTextLength() > room && n > 3; n--) span.textContent = `${name.slice(0, n).trimEnd()}…`;
+  const w = span.getComputedTextLength();
+  el.setAttribute('x', Math.min(290, right - w / 2));
 }
 
 // ---------------------------------------------------------------- setup diagram popover
@@ -836,6 +854,8 @@ function init() {
     const b = e.target.closest('button'); if (!b) return;
     state.target = +b.dataset.t; $('target').value = state.target; update();
   });
+  // the diagram's label sizes change at the phone breakpoint, so refit the sample name
+  matchMedia('(max-width: 600px)').addEventListener('change', update);
   $('tabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) selectTab(b.dataset.tab); });
 
   // setup diagram
