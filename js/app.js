@@ -56,25 +56,82 @@ function presetState(p, base = {}) {
 }
 
 let state;
+// The URL hash holds the setup as short readable parameters, storing only what differs
+// from the chosen preset (or the app defaults), e.g. #p=np-polymer&src=Cu&t=50
+const DEFAULT_SOURCE = 'Mo', DEFAULT_PRESET = 'ti-pores';
+const PHASE_SEP = '|';
+const phaseKey = (list) => JSON.stringify(list.map((x) => [x.name, x.formula, +x.density, +x.fraction]));
+
 function loadState() {
-  const m = location.hash.match(/s=([^&]+)/);
-  if (m) {
+  const hash = location.hash.slice(1);
+  if (hash.startsWith('s=')) {
+    // older links: base64-encoded JSON of the whole state
     try {
-      const s = JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')))));
+      const s = JSON.parse(decodeURIComponent(escape(atob(hash.slice(2).split('&')[0].replace(/-/g, '+').replace(/_/g, '/')))));
       if (s && Array.isArray(s.phases) && s.phases.length) return s;
     } catch (e) { /* fall through to default */ }
+  } else if (hash) {
+    const s = decodeState(hash);
+    if (s) return s;
   }
-  // default start: Mo Kα beam, porous titanium
-  const mo = SOURCES.find((x) => x.id === 'Mo');
-  return presetState(PRESETS.find((x) => x.id === 'ti-pores'), { source: mo.id, energy: mo.E });
+  const src = SOURCES.find((x) => x.id === DEFAULT_SOURCE);
+  return presetState(PRESETS.find((x) => x.id === DEFAULT_PRESET), { source: src.id, energy: src.E });
+}
+function decodeState(hash) {
+  const q = new URLSearchParams(hash);
+  const base = PRESETS.find((x) => x.id === (q.get('p') || q.get('b') || DEFAULT_PRESET));
+  const srcId = q.has('E') ? 'custom' : (q.get('src') || DEFAULT_SOURCE);
+  const src = SOURCES.find((x) => x.id === srcId);
+  const E = q.has('E') ? parseFloat(q.get('E')) : src?.E;
+  if (!base || !src || !(E >= 1 && E <= 100)) return null;
+  const s = presetState(base, { source: srcId, energy: E });
+  s.preset = q.has('p') ? base.id : null;
+  if (q.has('basis')) s.basis = q.get('basis') === 'wt' ? 'wt' : 'vol';
+  if (q.has('por')) s.porosity = Math.max(0, Math.min(99, parseFloat(q.get('por')) || 0));
+  if (q.has('ph')) {
+    s.phases = q.getAll('ph').map((x) => {
+      const [name = '', formula = '', density, fraction] = x.split(PHASE_SEP);
+      return { name, formula, density: parseFloat(density) || 0, fraction: parseFloat(fraction) || 0 };
+    });
+  }
+  if (CONTAINERS.some((c) => c.id === q.get('h'))) s.container = q.get('h');
+  if (q.has('cf')) s.cFormula = q.get('cf');
+  if (q.has('cd')) s.cDensity = parseFloat(q.get('cd')) || 0;
+  if (q.has('ct')) s.cThick = parseFloat(q.get('ct')) || 0;
+  if (parseFloat(q.get('t')) >= 0) s.thickness = parseFloat(q.get('t'));
+  if (q.has('u')) s.thickUnit = q.get('u') === 'mm' ? 1000 : 1;
+  const T = parseFloat(q.get('T'));
+  if (T > 0 && T < 100) s.target = T;
+  return s;
 }
 function encodeState() {
-  return btoa(unescape(encodeURIComponent(JSON.stringify(state)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const base = PRESETS.find((x) => x.id === (state.preset || state.base)) || PRESETS.find((x) => x.id === 'custom');
+  const def = presetState(base);
+  const q = new URLSearchParams();
+  q.set(state.preset ? 'p' : 'b', base.id);
+  if (state.source === 'custom') q.set('E', +state.energy.toFixed(4));
+  else if (state.source !== DEFAULT_SOURCE) q.set('src', state.source);
+  if (state.basis !== def.basis) q.set('basis', state.basis);
+  if (state.porosity !== def.porosity) q.set('por', state.porosity);
+  if (phaseKey(state.phases) !== phaseKey(def.phases)) {
+    for (const x of state.phases) q.append('ph', [x.name, x.formula, x.density, x.fraction].map((v) => String(v).replaceAll(PHASE_SEP, '/')).join(PHASE_SEP));
+  }
+  if (state.container !== def.container) q.set('h', state.container);
+  if (state.container === 'custom') {
+    if (state.cFormula != null) q.set('cf', state.cFormula);
+    if (state.cDensity != null) q.set('cd', state.cDensity);
+    if (state.cThick != null) q.set('ct', state.cThick);
+  }
+  if (state.thickness !== def.thickness) q.set('t', +state.thickness.toPrecision(6));
+  if (state.thickUnit !== def.thickUnit) q.set('u', state.thickUnit === 1000 ? 'mm' : 'um');
+  if (state.target !== def.target) q.set('T', state.target);
+  // keep formulas and names legible: only escape what the hash really needs
+  return q.toString().replace(/%2C/g, ',').replace(/%28/g, '(').replace(/%29/g, ')').replace(/%7C/g, '|').replace(/%2F/g, '/');
 }
 let hashTimer;
 function saveHash() {
   clearTimeout(hashTimer);
-  hashTimer = setTimeout(() => history.replaceState(null, '', `#s=${encodeState()}`), 300);
+  hashTimer = setTimeout(() => history.replaceState(null, '', `#${encodeState()}`), 300);
 }
 function markModified() {
   if (state.preset) { state.preset = null; renderPicker(); }
@@ -883,7 +940,7 @@ function init() {
   });
   $('aboutBtn').addEventListener('click', () => $('aboutDlg').showModal());
   $('shareBtn').addEventListener('click', async () => {
-    history.replaceState(null, '', `#s=${encodeState()}`);
+    history.replaceState(null, '', `#${encodeState()}`);
     try { await navigator.clipboard.writeText(location.href); toast('Link copied to clipboard'); }
     catch { toast('Copy the address bar to share this setup'); }
   });
