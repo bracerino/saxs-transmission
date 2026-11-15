@@ -597,6 +597,8 @@ dialog::backdrop { background: rgba(10, 14, 20, .45); backdrop-filter: blur(2px)
 .credit-gh svg, .btn svg.fill { width: 18px; height: 18px; fill: currentColor; stroke: none; }
 .sec:nth-last-child(2) { border-bottom: 0; }
 @media (max-width: 900px) { .credit { border-bottom: 0; } }
+.visits { margin-top: -8px; padding: 0 24px 16px; font-size: 12.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.visits b { color: var(--text-2); font-weight: 600; }
 
 /* measurement setup schematic */
 .setup { position: relative; margin: 4px 0 0; }
